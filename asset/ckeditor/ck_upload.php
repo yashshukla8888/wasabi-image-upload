@@ -8,18 +8,16 @@ require './../../vendor/autoload.php';
 use Aws\S3\S3Client;
 use Aws\Route53\Route53Client;
 use Aws\S3\Exception\S3Exception;
-$bucketName = "dadaji-bhartiya-sanskruti-chair";
+// $bucketName = "dadaji-bhartiya-sanskruti-chair";
 
 // AWS DETAILS
 // $CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
-// $IAM_KEY = 'AKIAXDGTPD32F4XXZ3SD';
-// $IAM_SECRET = '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';
 
 // WASABI DETAILS
-$bucketName = 'test-rao';
-$IAM_KEY= 'D1LJCO5WO10TNJH4P1YP';
-$IAM_SECRET= 'ZbFJouHEB1bn92HbJjhQNyUCd1UT2H1dOEsIBI4D';
-
+$bucketName = 'raotest';
+$IAM_KEY= 'LVDHJ0RVZRKKBTX04UNG';
+$IAM_SECRET= 'Qm9XkQeZgpc1Pp3khiAC83zeP5NQLab2gU2nqspK';
+$CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
 $sepext = explode('.', strtolower($_FILES['upload']['name'])); 
 $type = end($sepext);    /** gets extension **/ 
 
@@ -42,28 +40,36 @@ $imgset = array(
 //     ]
 // ));
 
-$s3 = Route53Client::factory(array(
-    // 'endpoint' => 's3.wasabisys.com',
-    'region' => 'us-east-2',
+// $s3 = Route53Client::factory(array(
+//     // 'endpoint' => 's3.us-west-1.wasabisys.com',
+//     'region' => 'us-west-1',
+//     'version' => 'latest',
+//     // 'profile' => 'wasabi',
+//     'use_path_style_endpoint' => true,
+//     'credentials' => [
+//         'key' => $IAM_KEY,
+//         'secret' => $IAM_SECRET,
+//     ]
+// ));
+
+$s3 = new S3Client([
+	'endpoint' => 'https://s3.us-west-1.wasabisys.com',
     'version' => 'latest',
-    // 'profile' => 'wasabi',
-    'use_path_style_endpoint' => true,
+    'region'  => 'us-west-1',
     'credentials' => [
         'key' => $IAM_KEY,
         'secret' => $IAM_SECRET,
     ]
-));
-
+]);
 
 try {
-    
     $result = $s3->putObject([
         'Bucket' => $bucketName,
         'Key'    => $_FILES['upload']['name'],
         'ACL'    => 'public-read',
-        // 'Body' => fopen($_FILES['upload']['tmp_name'], 'r'),
         'SourceFile' => $_FILES['upload']['tmp_name'],
     ]);
+    // print_r($result); exit();
     $msg = $type .' successfully uploaded: \\n- Size: '. number_format($_FILES['upload']['size']/1024, 2, '.', '') .' KB'; 
 
     $url = $result['ObjectURL'];
