@@ -6,6 +6,7 @@ error_reporting(E_ALL);
 require './../../vendor/autoload.php';
 
 use Aws\S3\S3Client;
+use Aws\Route53\Route53Client;
 use Aws\S3\Exception\S3Exception;
 $bucketName = "dadaji-bhartiya-sanskruti-chair";
 
@@ -41,9 +42,9 @@ $imgset = array(
 //     ]
 // ));
 
-$s3 = S3Client::factory(array(
-    'endpoint' => 'http://s3.wasabisys.com',
-    'region' => 'us-west-1',
+$s3 = Route53Client::factory(array(
+    // 'endpoint' => 's3.wasabisys.com',
+    'region' => 'us-east-2',
     'version' => 'latest',
     // 'profile' => 'wasabi',
     'use_path_style_endpoint' => true,
@@ -56,11 +57,11 @@ $s3 = S3Client::factory(array(
 
 try {
     
-    
     $result = $s3->putObject([
         'Bucket' => $bucketName,
         'Key'    => $_FILES['upload']['name'],
         'ACL'    => 'public-read',
+        // 'Body' => fopen($_FILES['upload']['tmp_name'], 'r'),
         'SourceFile' => $_FILES['upload']['tmp_name'],
     ]);
     $msg = $type .' successfully uploaded: \\n- Size: '. number_format($_FILES['upload']['size']/1024, 2, '.', '') .' KB'; 
