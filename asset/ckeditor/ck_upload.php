@@ -14,9 +14,12 @@ use Aws\S3\Exception\S3Exception;
 // $CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
 
 // WASABI DETAILS
-$bucketName = 'raotest';
-$IAM_KEY= 'LVDHJ0RVZRKKBTX04UNG';
-$IAM_SECRET= 'Qm9XkQeZgpc1Pp3khiAC83zeP5NQLab2gU2nqspK';
+// $bucketName = 'raotest';
+// $IAM_KEY= 'LVDHJ0RVZRKKBTX04UNG';
+// $IAM_SECRET= 'Qm9XkQeZgpc1Pp3khiAC83zeP5NQLab2gU2nqspK';
+$bucketName = 'vansah';
+$IAM_KEY= 'CNR2IDGFE9SC3HXZ0SUO';
+$IAM_SECRET= 'Gs2Nl3U2G7lYy4oKHBWOPBp9IiQQaViDl68KuWLO';
 $CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
 $sepext = explode('.', strtolower($_FILES['upload']['name'])); 
 $type = end($sepext);    /** gets extension **/ 
