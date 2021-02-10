@@ -86,7 +86,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 <script>
 
     CKEDITOR.replace('editor', {
-        filebrowserUploadUrl: 'asset/ckeditor/ck_upload.php?upload=true',
+        filebrowserUploadUrl: 'application/asset/ckeditor/ck_upload.php?upload=true',
         filebrowserUploadMethod: 'form'
     });
 

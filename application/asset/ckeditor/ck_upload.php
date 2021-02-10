@@ -1,10 +1,27 @@
-<?php 
-// Define file upload path 
-$upload_dir = array( 
-    'img'=> 'uploads/', 
-); 
- 
-// Allowed image properties  
+<?php
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
+
+require './../../../vendor/autoload.php';
+require './../../../conf.php';
+
+use Aws\S3\S3Client;
+use Aws\Route53\Route53Client;
+use Aws\S3\Exception\S3Exception;
+
+
+$_GET['CKEditorFuncNum'] = 1;
+$CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
+
+$sepext = explode('.', strtolower($_FILES['upload']['name'])); 
+$type = end($sepext);    /** gets extension **/ 
+$pastImage = false;
+
+
+if($_GET['responseType'] && $_GET['responseType'] = "json") $pastImage = true;
+
+
 $imgset = array( 
     'maxsize' => 2000, 
     'maxwidth' => 1024, 
@@ -13,83 +30,54 @@ $imgset = array(
     'minheight' => 10, 
     'type' => array('bmp', 'gif', 'jpg', 'jpeg', 'png'), 
 ); 
- 
-// If 0, will OVERWRITE the existing file 
-define('RENAME_F', 1); 
- 
-/** 
- * Set filename 
- * If the file exists, and RENAME_F is 1, set "img_name_1" 
- * 
- * $p = dir-path, $fn=filename to check, $ex=extension $i=index to rename 
- */ 
-function setFName($p, $fn, $ex, $i){ 
-    if(RENAME_F ==1 && file_exists($p .$fn .$ex)){ 
-        return setFName($p, F_NAME .'_'. ($i +1), $ex, ($i +1)); 
-    }else{ 
-        return $fn .$ex; 
-    } 
-} 
- 
-$re = ''; 
-if(isset($_FILES['upload']) && strlen($_FILES['upload']['name']) > 1) { 
- 
-    define('F_NAME', preg_replace('/\.(.+?)$/i', '', basename($_FILES['upload']['name'])));   
- 
-    // Get filename without extension 
-    $sepext = explode('.', strtolower($_FILES['upload']['name'])); 
-    $type = end($sepext);    /** gets extension **/ 
-     
-    // Upload directory 
-    $upload_dir = in_array($type, $imgset['type']) ? $upload_dir['img'] : $upload_dir['audio']; 
-    $upload_dir = trim($upload_dir, '/') .'/'; 
- 
-    // Validate file type 
-    if(in_array($type, $imgset['type'])){ 
-        // Image width and height 
-        list($width, $height) = getimagesize($_FILES['upload']['tmp_name']); 
- 
-        if(isset($width) && isset($height)) { 
-            if($width > $imgset['maxwidth'] || $height > $imgset['maxheight']){ 
-                $re .= '\\n Width x Height = '. $width .' x '. $height .' \\n The maximum Width x Height must be: '. $imgset['maxwidth']. ' x '. $imgset['maxheight']; 
-            } 
- 
-            if($width < $imgset['minwidth'] || $height < $imgset['minheight']){ 
-                $re .= '\\n Width x Height = '. $width .' x '. $height .'\\n The minimum Width x Height must be: '. $imgset['minwidth']. ' x '. $imgset['minheight']; 
-            } 
- 
-            if($_FILES['upload']['size'] > $imgset['maxsize']*1000){ 
-                $re .= '\\n Maximum file size must be: '. $imgset['maxsize']. ' KB.'; 
-            } 
-        } 
-    }else{ 
-        $re .= 'The file: '. $_FILES['upload']['name']. ' has not the allowed extension type.'; 
-    } 
-     
-    // File upload path 
-    $f_name = setFName($_SERVER['DOCUMENT_ROOT'] .'/'. $upload_dir, F_NAME, ".$type", 0); 
-    $uploadpath = $upload_dir . $f_name; 
- 
-    // If no errors, upload the image, else, output the errors 
-    if($re == ''){ 
 
-        
+$s3 = S3Client::factory(array(
+    'region' => $config['region'],
+    'version' => '2006-03-01',
+    'use_path_style_endpoint' => true,
+    'credentials' => [
+        'key' => $config['iam-key'],
+        'secret' => $config['iam_secret'],
+    ]
+));
 
-        if(move_uploaded_file($_FILES['upload']['tmp_name'], $uploadpath)) { 
-            $CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
-            $url = 'ckeditor/'. $upload_dir . $f_name; 
-            $msg = F_NAME .'.'. $type .' successfully uploaded: \\n- Size: '. number_format($_FILES['upload']['size']/1024, 2, '.', '') .' KB'; 
-            $re = in_array($type, $imgset['type']) ? "<script>window.parent.CKEDITOR.tools.callFunction($CKEditorFuncNum, '$url', '$msg')</script>":'<script>var cke_ob = window.parent.CKEDITOR; for(var ckid in cke_ob.instances) { if(cke_ob.instances[ckid].focusManager.hasFocus) break;} cke_ob.instances[ckid].insertHtml(\' \', \'unfiltered_html\'); alert("'. $msg .'"); var dialog = cke_ob.dialog.getCurrent();dialog.hide();</script>'; 
-        }else{ 
-            // $re = '<script>alert("Unable to upload the file")</script>'; 
-            $re = "$_FILES['upload']['tmp_name']".$_FILES['upload']['tmp_name'];
-        echo "$uploadpath".$uploadpath;
-        } 
-    }else{ 
-        $re = '<script>alert("'. $re .'")</script>'; 
-    } 
-} 
- 
-// Render HTML output 
-@header('Content-type: text/html; charset=utf-8'); 
-echo $re;
+// $s3 = new S3Client([
+// 	'endpoint' => 'https://s3.us-west-1.wasabisys.com',
+//     'version' => 'latest',
+//     'region'  => $config['region'],
+//     'credentials' => [
+//         'key' => $config['iam-key'],
+//         'secret' => $config['iam_secret'],
+//     ]
+// ]);
+
+try {
+    $result = $s3->putObject([
+        'Bucket' => $config['bucket-name'],
+        'Key'    => $_FILES['upload']['name'],
+        'ACL'    => 'public-read',
+        'SourceFile' => $_FILES['upload']['tmp_name'],
+    ]);
+    // print_r($result); exit();
+    $msg = $type .' successfully uploaded: \\n- Size: '. number_format($_FILES['upload']['size']/1024, 2, '.', '') .' KB'; 
+
+    $url = $result['ObjectURL'];
+    $re = in_array($type, $imgset['type']) ? "<script>window.parent.CKEDITOR.tools.callFunction($CKEditorFuncNum, '$url', '$msg')</script>":'<script>var cke_ob = window.parent.CKEDITOR; for(var ckid in cke_ob.instances) { if(cke_ob.instances[ckid].focusManager.hasFocus) break;} cke_ob.instances[ckid].insertHtml(\' \', \'unfiltered_html\'); alert("'. $msg .'"); var dialog = cke_ob.dialog.getCurrent();dialog.hide();</script>'; 
+} catch (S3Exception $e) {
+    $re = $e->getMessage() . PHP_EOL;
+}
+
+if($pastImage){
+    $response = [];
+
+    $response['fileName'] = $_FILES['upload']['name'];
+    $response['url'] = $url;
+    $response['uploaded'] = 1;
+    echo json_encode($response);
+}
+else{
+    @header('Content-type: text/html; charset=utf-8');  
+    echo $re;
+}
+
+// 
