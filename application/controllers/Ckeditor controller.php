@@ -25,7 +25,7 @@ class Ckeditor extends CI_Controller {
 			'config' => array(
 				'toolbar' 	=> 	"Full", 	//Using the Full toolbar
 				'width' 	=> 	"550px",	//Setting a custom width
-				'height' 	=> 	'100px',	//Setting a custom height
+				'height' 	=> 	'200px',	//Setting a custom height
  
 			),
  

@@ -4,25 +4,27 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require './../../vendor/autoload.php';
+require './../../conf.php';
 
+// var_dump($config);
 use Aws\S3\S3Client;
 use Aws\Route53\Route53Client;
 use Aws\S3\Exception\S3Exception;
 // $bucketName = "dadaji-bhartiya-sanskruti-chair";
 
-// AWS DETAILS
-// $CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
 
-// WASABI DETAILS
-// $bucketName = 'raotest';
-// $IAM_KEY= 'LVDHJ0RVZRKKBTX04UNG';
-// $IAM_SECRET= 'Qm9XkQeZgpc1Pp3khiAC83zeP5NQLab2gU2nqspK';
-$bucketName = 'vansah';
-$IAM_KEY= 'CNR2IDGFE9SC3HXZ0SUO';
-$IAM_SECRET= 'Gs2Nl3U2G7lYy4oKHBWOPBp9IiQQaViDl68KuWLO';
+$_GET['CKEditorFuncNum'] = 1;
+// $bucketName = 'wasabi.vansah';
+// $IAM_KEY= 'CNR2IDGFE9SC3HXZ0SUO';
+// $IAM_SECRET= 'Gs2Nl3U2G7lYy4oKHBWOPBp9IiQQaViDl68KuWLO';
 $CKEditorFuncNum = $_GET['CKEditorFuncNum']; 
 $sepext = explode('.', strtolower($_FILES['upload']['name'])); 
 $type = end($sepext);    /** gets extension **/ 
+$pastImage = false;
+
+
+if($_GET['responseType'] && $_GET['responseType'] = "json") $pastImage = true;
+
 
 $imgset = array( 
     'maxsize' => 2000, 
@@ -58,16 +60,16 @@ $imgset = array(
 $s3 = new S3Client([
 	'endpoint' => 'https://s3.us-west-1.wasabisys.com',
     'version' => 'latest',
-    'region'  => 'us-west-1',
+    'region'  => $config['region'],
     'credentials' => [
-        'key' => $IAM_KEY,
-        'secret' => $IAM_SECRET,
+        'key' => $config['iam-key'],
+        'secret' => $config['iam_secret'],
     ]
 ]);
 
 try {
     $result = $s3->putObject([
-        'Bucket' => $bucketName,
+        'Bucket' => $config['bucket-name'],
         'Key'    => $_FILES['upload']['name'],
         'ACL'    => 'public-read',
         'SourceFile' => $_FILES['upload']['tmp_name'],
@@ -81,6 +83,20 @@ try {
     $re = $e->getMessage() . PHP_EOL;
 }
 
+if($pastImage){
+    $response = [];
 
-@header('Content-type: text/html; charset=utf-8'); 
-echo $re;
+    $response['fileName'] = $_FILES['upload']['name'];
+    $response['url'] = $url;
+    $response['uploaded'] = 1;
+    // {"fileName":"image(8).png","uploaded":1,"error":{"number":201,"message":"A file with the same name already exists. The uploaded file was renamed to \u0022image(8).png\u0022."},"url":"https:\/\/ckeditor.com\/apps\/ckfinder\/userfiles\/files\/image(8).png"}
+    // echo $url;
+
+    echo json_encode($response);
+}
+else{
+    @header('Content-type: text/html; charset=utf-8');  
+    echo $re;
+}
+
+// 
